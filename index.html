@@ -3,16 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crash AI PRO</title>
+    <title>Crash AI PRO | النسخة الذكية</title>
     <style>
-        body { background:#020617; color:white; text-align:center; font-family: sans-serif; padding:20px; }
-        .container { max-width:400px; margin:auto; background:#0f172a; padding:25px; border-radius:25px; border:1px solid #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        input { width:80%; padding:15px; border-radius:12px; border:2px solid #1e293b; background:#020617; color:white; font-size:20px; margin-bottom:15px; outline:none; }
-        button { width:100%; padding:15px; border-radius:12px; border:none; background:#2563eb; color:white; font-weight:bold; cursor:pointer; font-size:16px; transition:0.3s; }
+        :root {
+            --bg: #020617;
+            --card: #0f172a;
+            --primary: #2563eb;
+            --text: #f8fafc;
+            --accent: #22c55e;
+        }
+        body { background: var(--bg); color: var(--text); text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; margin: 0; }
+        .container { max-width: 450px; margin: auto; background: var(--card); padding: 30px; border-radius: 28px; border: 1px solid #1e293b; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+        h2 { font-size: 24px; margin-bottom: 20px; color: var(--text); }
+        input { width: 85%; padding: 16px; border-radius: 14px; border: 2px solid #1e293b; background: #020617; color: white; font-size: 22px; margin-bottom: 20px; text-align: center; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(37, 99, 235, 0.4); }
+        button { width: 100%; padding: 16px; border-radius: 14px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.3s; }
+        button:hover { background: #1d4ed8; transform: translateY(-2px); }
         button:active { transform: scale(0.98); }
-        .box { display:inline-block; background:#1e293b; padding:8px 12px; margin:4px; border-radius:8px; border:1px solid #334155; font-size:14px; }
-        .result { margin-top:20px; padding:20px; background:#020617; border-radius:15px; border:1px solid #334155; min-height:100px; }
-        hr { border:0; border-top:1px solid #1e293b; margin:15px 0; }
+        .box { display: inline-block; background: #1e293b; padding: 10px 14px; margin: 5px; border-radius: 10px; border: 1px solid #334155; font-size: 15px; font-weight: bold; animation: fadeIn 0.5s; }
+        .result { margin-top: 25px; padding: 25px; background: #020617; border-radius: 20px; border: 1px solid #334155; min-height: 120px; }
+        .stats { display: flex; justify-content: space-around; margin-top: 15px; font-size: 13px; color: #94a3b8; border-top: 1px solid #1e293b; padding-top: 15px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -20,53 +31,74 @@
         <h2>🚀 Crash AI PRO</h2>
         <input id="num" type="number" step="0.01" placeholder="أدخل الرقم الأخير..." inputmode="decimal">
         <button onclick="add()">إضافة وتحليل النمط</button>
-        <div id="list" style="margin:20px 0;"></div>
-        <div id="result" class="result">في انتظار البيانات...</div>
+        
+        <div id="list" style="margin: 25px 0;"></div>
+        
+        <div id="result" class="result">
+            <p style="color: #64748b;">أدخل 8 أرقام على الأقل لبدء الصيد الذكي...</p>
+        </div>
     </div>
 
     <script>
         let data = [];
+
         function add() {
-            let val = parseFloat(document.getElementById("num").value);
-            if(isNaN(val)) return;
+            const input = document.getElementById("num");
+            const val = parseFloat(input.value);
+            if (isNaN(val) || val <= 0) return;
+            
             data.push(val);
-            document.getElementById("num").value = "";
+            input.value = "";
             render();
             analyze();
         }
+
         function render() {
-            document.getElementById("list").innerHTML = data.slice(-10).map(x => `<div class="box">${x}x</div>`).join("");
+            const listDiv = document.getElementById("list");
+            listDiv.innerHTML = data.slice(-10).map(x => `<div class="box">${x}x</div>`).join("");
         }
+
         async function analyze() {
-            if(data.length < 5) {
-                document.getElementById("result").innerHTML = `محتاجين ${5 - data.length} أرقام كمان...`;
+            const resDiv = document.getElementById("result");
+            if (data.length < 8) {
+                resDiv.innerHTML = `<p style="color: #94a3b8;">محتاجين ${8 - data.length} أرقام كمان لضبط الـ AI...</p>`;
                 return;
             }
-            const resDiv = document.getElementById("result");
-            resDiv.innerHTML = "⏳ جاري التحليل الذكي...";
+
+            resDiv.innerHTML = "⏳ جاري فحص خوارزمية السيرفر...";
+
             try {
                 const response = await fetch("https://1-production-9423.up.railway.app/api/analyze", {
                     method: "POST",
-                    headers: {"Content-Type": "application/json"},
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ values: data })
                 });
+
+                if (!response.ok) throw new Error("السيرفر لا يستجيب");
+
                 const r = await response.json();
-                if(r.error) {
-                    resDiv.innerHTML = `<span style="color:orange">${r.error}</span>`;
+
+                if (r.error) {
+                    resDiv.innerHTML = `<span style="color: #f59e0b;">${r.error}</span>`;
                     return;
                 }
+
+                // تحديد لون الإشارة بناءً على الاحتمالية
+                const probValue = parseFloat(r.probability);
+                const color = probValue > 70 ? "#22c55e" : (probValue > 40 ? "#f59e0b" : "#ef4444");
+
                 resDiv.innerHTML = `
-                    <h2 style="color:#22c55e">${r.signal}</h2>
-                    <h1 style="font-size:45px; margin:10px 0;">${r.probability}</h1>
-                    <p>التوقع القادم: <strong>${r.predicted_next}x</strong></p>
-                    <hr>
-                    <div style="display:flex; justify-content:space-around; font-size:12px; color:#94a3b8;">
-                        <span>الاتجاه: ${r.trend}</span>
-                        <span>الضغط: ${r.pressure_level}</span>
+                    <h2 style="color: ${color}; margin: 0;">${r.signal}</h2>
+                    <h1 style="font-size: 55px; margin: 10px 0; color: white;">${r.probability}</h1>
+                    <p style="font-size: 18px; margin-bottom: 15px;">التوقع القادم: <strong style="color: #38bdf8;">${r.predicted_next}x</strong></p>
+                    <div class="stats">
+                        <span>الضغط: <strong>${r.pressure || '---'}</strong></span>
+                        <span>الاتجاه: <strong>${r.trend || '---'}</strong></span>
                     </div>
                 `;
-            } catch(e) {
-                resDiv.innerHTML = "❌ خطأ في الاتصال بسيرفر Railway";
+            } catch (e) {
+                resDiv.innerHTML = "<span style='color: #ef4444;'>❌ خطأ: تأكد أن Railway يعمل والرابط صحيح</span>";
+                console.error("Analysis Error:", e);
             }
         }
     </script>
