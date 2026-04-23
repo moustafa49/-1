@@ -27,19 +27,21 @@ input {
 
 button {
     padding: 12px;
+    border: none;
     border-radius: 10px;
     margin: 5px;
     cursor: pointer;
 }
 
-.add { background: blue; color: white; }
+.add { background: #2563eb; color: white; }
 .clear { background: red; color: white; }
 
 .box {
-    background: #111827;
-    padding: 15px;
-    margin-top: 15px;
-    border-radius: 15px;
+    background: #1a2238;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 10px;
+    display: inline-block;
 }
 </style>
 </head>
@@ -48,55 +50,60 @@ button {
 
 <h1>🚀 Crash Analyzer PRO</h1>
 
-<div class="container">
-    <input id="num" placeholder="أدخل رقم">
-    <button class="add" onclick="add()">Add</button>
-    <button class="clear" onclick="clearAll()">Clear</button>
+<input type="number" id="input" placeholder="ادخل رقم">
+<button class="add" onclick="addValue()">Add</button>
+<br>
+<button class="clear" onclick="clearAll()">Clear</button>
 
-    <div id="list"></div>
+<div id="values"></div>
 
-    <div class="box" id="result">--</div>
-</div>
+<br>
+<button onclick="analyze()">Analyze</button>
+
+<div id="result"></div>
 
 <script>
-let numbers = [];
+let values = [];
 
-function add() {
-    let val = parseFloat(document.getElementById("num").value);
-    if (!isNaN(val)) {
-        numbers.push(val);
-        render();
-    }
+function addValue() {
+    let val = parseFloat(document.getElementById("input").value);
+    if (!val) return;
+
+    values.push(val);
+
+    let div = document.createElement("div");
+    div.className = "box";
+    div.innerText = val;
+    document.getElementById("values").appendChild(div);
+
+    document.getElementById("input").value = "";
 }
 
 function clearAll() {
-    numbers = [];
-    render();
-    document.getElementById("result").innerHTML = "--";
+    values = [];
+    document.getElementById("values").innerHTML = "";
+    document.getElementById("result").innerHTML = "";
 }
 
-function render() {
-    document.getElementById("list").innerHTML = numbers.join(" | ");
-    analyze();
-}
-
-function analyze() {
-    fetch("https://1-production-9423.up.railway.app/analyze", {
+async function analyze() {
+    const res = await fetch("https://YOUR-RAILWAY-LINK/analyze", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ numbers })
-    })
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById("result").innerHTML = `
-            AVG: ${data.avg} <br>
-            MAX: ${data.max} <br>
-            MIN: ${data.min} <br>
-            🔥 ${data.signal}
-        `;
+        body: JSON.stringify({ values: values })
     });
+
+    const data = await res.json();
+
+    document.getElementById("result").innerHTML = `
+        <h2>${data.signal}</h2>
+        <p>Target: ${data.target}</p>
+        <p>Confidence: ${data.confidence}</p>
+        <p>AVG: ${data.avg}</p>
+        <p>MAX: ${data.max}</p>
+        <p>MIN: ${data.min}</p>
+    `;
 }
 </script>
 
