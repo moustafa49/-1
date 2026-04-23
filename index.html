@@ -3,31 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crash AI</title>
+<title>Crash AI PRO</title>
 
 <style>
-body { background:#0b0f1a; color:white; text-align:center; font-family:Arial; }
-.container { max-width:420px; margin:auto; }
+body {
+    background: #020617;
+    color: white;
+    font-family: Arial;
+    text-align: center;
+}
 
-input { padding:10px; width:60%; border-radius:10px; border:none; }
-button { padding:10px; border-radius:10px; margin:5px; border:none; cursor:pointer; }
+.container {
+    max-width: 420px;
+    margin: auto;
+}
 
-.add { background:#2563eb; color:white; }
-.clear { background:red; color:white; }
+input {
+    width: 60%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+}
+
+button {
+    padding: 12px;
+    border-radius: 10px;
+    margin: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+.add { background: #2563eb; color: white; }
+.clear { background: red; color: white; }
 
 .box {
-    display:inline-block;
-    background:#1e293b;
-    padding:8px;
-    margin:4px;
-    border-radius:8px;
+    display: inline-block;
+    background: #1e293b;
+    padding: 10px;
+    margin: 4px;
+    border-radius: 10px;
 }
 
 .result {
-    margin-top:20px;
-    padding:15px;
-    background:#111827;
-    border-radius:15px;
+    margin-top: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg,#020617,#0f172a);
+    border-radius: 20px;
 }
 </style>
 </head>
@@ -35,14 +56,14 @@ button { padding:10px; border-radius:10px; margin:5px; border:none; cursor:point
 <body>
 
 <div class="container">
-<h2>🚀 Crash AI Predictor</h2>
+<h2>🚀 Crash AI PRO</h2>
 
 <input id="num" type="number">
 <button class="add" onclick="add()">Add</button>
 <button class="clear" onclick="clearData()">Clear</button>
 
 <div id="list"></div>
-<div class="result" id="result">--</div>
+<div id="result" class="result">--</div>
 </div>
 
 <script>
@@ -57,7 +78,7 @@ function add(){
     document.getElementById("num").value="";
     render();
 
-    if(data.length >= 3){
+    if(data.length >= 5){
         analyze();
     }
 }
@@ -86,22 +107,25 @@ async function analyze(){
 
         const r = await res.json();
 
+        let color = r.signal.includes("🚀") ? "#22c55e" :
+                    r.signal.includes("🔥") ? "#f59e0b" :
+                    r.signal.includes("⚠️") ? "#eab308" :
+                    "#ef4444";
+
         document.getElementById("result").innerHTML = `
-            <h2>${r.signal}</h2>
-            <p>${r.trend}</p>
+            <h2 style="color:${color}">${r.signal}</h2>
 
             <hr>
 
-            <h3>🔮 التوقع القادم</h3>
-            <p>من: ${r.prediction_low}</p>
-            <p>إلى: ${r.prediction_high}</p>
+            <h3>🔮 التوقع</h3>
+            <p>${r.prediction_low} → ${r.prediction_high}</p>
             <p>متوسط: ${r.next_estimate}</p>
 
             <hr>
 
+            <p>Score: ${r.score}</p>
+            <p>Low Streak: ${r.low_streak}</p>
             <p>AVG: ${r.avg}</p>
-            <p>Momentum: ${r.momentum}</p>
-            <p>Pressure: ${r.pressure}</p>
             <p>Volatility: ${r.volatility}</p>
         `;
 
