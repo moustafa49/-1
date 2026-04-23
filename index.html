@@ -3,127 +3,135 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crash Analyzer PRO</title>
+<title>Crash Analyzer PRO+</title>
 
 <style>
 body {
-    background: #0f172a;
+    background: #0b0f1a;
     color: white;
     font-family: Arial;
     text-align: center;
-    padding: 20px;
 }
 
-h1 {
-    margin-bottom: 20px;
+.container {
+    max-width: 420px;
+    margin: auto;
 }
 
 input {
-    padding: 10px;
-    width: 60%;
+    width: 65%;
+    padding: 12px;
     border-radius: 10px;
     border: none;
-    outline: none;
 }
 
 button {
-    padding: 10px 15px;
-    border: none;
+    padding: 12px;
     border-radius: 10px;
     margin: 5px;
-    cursor: pointer;
+    border: none;
 }
 
 .add { background: #2563eb; color: white; }
 .clear { background: red; color: white; }
-.analyze { background: #9ca3af; }
 
-#values {
-    margin-top: 15px;
-}
+.grid { margin-top: 10px; }
 
 .box {
     display: inline-block;
     background: #1e293b;
     padding: 10px;
-    margin: 5px;
+    margin: 4px;
     border-radius: 10px;
+}
+
+.result {
+    margin-top: 20px;
+    padding: 15px;
+    background: #111827;
+    border-radius: 15px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🚀 Crash Analyzer PRO</h1>
+<div class="container">
+<h2>🚀 Crash Analyzer PRO+</h2>
 
-<input type="number" id="input" placeholder="ادخل رقم">
-<button class="add" onclick="addValue()">Add</button>
-<br>
+<input id="num" type="number" placeholder="ادخل رقم">
+<button class="add" onclick="add()">Add</button>
+<button class="clear" onclick="clearData()">Clear</button>
 
-<button class="clear" onclick="clearAll()">Clear</button>
+<div class="grid" id="list"></div>
 
-<div id="values"></div>
-
-<br>
-
-<button class="analyze" onclick="analyze()">Analyze</button>
-
-<div id="result"></div>
+<div class="result" id="result">--</div>
+</div>
 
 <script>
 
-let values = [];
+let data = [];
 
-function addValue() {
-    let val = parseFloat(document.getElementById("input").value);
+function add(){
+    let val = parseFloat(document.getElementById("num").value);
     if (!val && val !== 0) return;
 
-    values.push(val);
+    data.push(val);
+    document.getElementById("num").value="";
+    render();
 
-    let div = document.createElement("div");
-    div.className = "box";
-    div.innerText = val;
-
-    document.getElementById("values").appendChild(div);
-    document.getElementById("input").value = "";
+    if(data.length >= 3){
+        analyze();
+    }
 }
 
-function clearAll() {
-    values = [];
-    document.getElementById("values").innerHTML = "";
-    document.getElementById("result").innerHTML = "";
+function clearData(){
+    data = [];
+    render();
+    document.getElementById("result").innerHTML="--";
 }
 
-async function analyze() {
-    try {
+function render(){
+    let html="";
+    data.slice(-20).forEach(x=>{
+        html += `<div class="box">${x}</div>`;
+    });
+    document.getElementById("list").innerHTML = html;
+}
+
+async function analyze(){
+    try{
         const res = await fetch("https://1-production-9423.up.railway.app/analyze", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                values: values
-            })
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ values: data })
         });
 
-        if (!res.ok) throw new Error("Server error");
+        const r = await res.json();
 
-        const data = await res.json();
+        let trend = "ثابت";
+        if(data.length >= 2){
+            trend = data[data.length-1] > data[data.length-2] ? "📈 صاعد" : "📉 هابط";
+        }
+
+        let color = r.signal.includes("قوي") ? "#22c55e" : "#ef4444";
 
         document.getElementById("result").innerHTML = `
-        <div style="background:#111827;padding:15px;border-radius:10px;margin-top:10px">
-            <h2>${data.signal}</h2>
-            <p>🎯 Target: ${data.target}</p>
-            <p>📊 Confidence: ${data.confidence}</p>
-            <p>AVG: ${data.avg}</p>
-            <p>MAX: ${data.max}</p>
-            <p>MIN: ${data.min}</p>
-        </div>
+            <h3 style="color:${color}">${r.signal}</h3>
+            <p>🎯 ${r.target}</p>
+            <p>📊 ${r.confidence}</p>
+            <p>📈 Trend: ${r.trend}</p>
+            <p>⚡ Momentum: ${r.momentum}</p>
+            <p>🔥 Ratio: ${r.ratio}</p>
+            <p>🌊 Volatility: ${r.volatility}</p>
+            <p>AVG: ${r.avg}</p>
+            <p>MAX: ${r.max}</p>
+            <p>MIN: ${r.min}</p>
         `;
 
-    } catch (err) {
-        console.log(err);
-        alert("❌ مشكلة في الاتصال بال API");
+    }catch(e){
+        console.log(e);
+        document.getElementById("result").innerHTML = "❌ API Error";
     }
 }
 
