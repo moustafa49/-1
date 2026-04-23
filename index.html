@@ -3,62 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crash AI ELITE OFFLINE</title>
+<title>Crash AI PRO</title>
 
 <style>
-body {
-    background: #020617;
-    color: white;
-    font-family: Arial;
-    text-align: center;
-}
-
-.container {
-    max-width: 420px;
-    margin: auto;
-}
-
-input {
-    width: 60%;
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-}
-
-button {
-    padding: 12px;
-    border-radius: 10px;
-    margin: 5px;
-    border: none;
-    cursor: pointer;
-}
-
-.add { background: #2563eb; color:white; }
-.clear { background: red; color:white; }
-
-.box {
-    display: inline-block;
-    background: #1e293b;
-    padding: 10px;
-    margin: 4px;
-    border-radius: 10px;
-}
-
-.result {
-    margin-top: 20px;
-    padding: 20px;
-    border-radius: 20px;
-    background: linear-gradient(135deg,#020617,#0f172a);
-}
+body { background:#020617; color:white; text-align:center; font-family:Arial;}
+.container { max-width:420px; margin:auto;}
+input { width:60%; padding:12px; border-radius:10px;}
+button { padding:12px; border-radius:10px; margin:5px; border:none; cursor:pointer;}
+.add {background:#2563eb;color:white;}
+.clear {background:red;color:white;}
+.box {display:inline-block;background:#1e293b;padding:10px;margin:4px;border-radius:10px;}
+.result {margin-top:20px;padding:20px;background:#0f172a;border-radius:20px;}
 </style>
 </head>
 
 <body>
 
 <div class="container">
-<h2>🚀 Crash AI ELITE</h2>
+<h2>🚀 Crash AI PRO</h2>
 
-<input id="num" type="number" placeholder="ادخل رقم">
+<input id="num" type="number">
 <button class="add" onclick="add()">Add</button>
 <button class="clear" onclick="clearData()">Clear</button>
 
@@ -77,12 +41,11 @@ function add(){
     data.push(val);
     document.getElementById("num").value="";
     render();
-
-    analyze(); // 🔥 تحليل مباشر
+    analyze();
 }
 
 function clearData(){
-    data = [];
+    data=[];
     render();
     document.getElementById("result").innerHTML="--";
 }
@@ -90,109 +53,49 @@ function clearData(){
 function render(){
     let html="";
     data.slice(-30).forEach(x=>{
-        html += `<div class="box">${x}</div>`;
+        html+=`<div class="box">${x}</div>`;
     });
-    document.getElementById("list").innerHTML = html;
+    document.getElementById("list").innerHTML=html;
 }
 
-function analyze(){
+async function analyze(){
+    try{
+        document.getElementById("result").innerHTML="⏳ تحليل...";
 
-    if(data.length < 5){
-        document.getElementById("result").innerHTML="⏳ محتاج بيانات أكتر";
-        return;
+        const res = await fetch("https://YOUR-API-LINK/analyze", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({values:data})
+        });
+
+        const r = await res.json();
+
+        if(r.error){
+            document.getElementById("result").innerHTML="⏳ بيانات أكتر";
+            return;
+        }
+
+        let color = r.probability > 70 ? "#22c55e" :
+                    r.probability > 50 ? "#f59e0b" :
+                    "#ef4444";
+
+        document.getElementById("result").innerHTML=`
+            <h2 style="color:${color}">${r.signal}</h2>
+            <h3>${r.probability}%</h3>
+
+            <p>🔮 ${r.predicted}</p>
+            <p>${r.range_low} → ${r.range_high}</p>
+
+            <hr>
+
+            <p>AVG: ${r.avg}</p>
+            <p>Momentum: ${r.momentum}</p>
+            <p>Volatility: ${r.volatility}</p>
+        `;
+
+    }catch(e){
+        document.getElementById("result").innerHTML="❌ API Error";
     }
-
-    let recent = data.slice(-20);
-
-    // 🔥 average
-    let avg = recent.reduce((a,b)=>a+b,0) / recent.length;
-
-    // 🔥 volatility
-    let variance = recent.reduce((a,b)=>a+Math.pow(b-avg,2),0)/recent.length;
-    let volatility = Math.sqrt(variance);
-
-    // 🔥 momentum
-    let momentum = recent[recent.length-1] - recent[recent.length-2];
-
-    // 🔥 low streak
-    let low_streak = 0;
-    for(let i=recent.length-1;i>=0;i--){
-        if(recent[i] < 1.5) low_streak++;
-        else break;
-    }
-
-    // 🔥 weighted avg
-    let weighted = 0, totalW = 0;
-    recent.forEach((v,i)=>{
-        let w = i+1;
-        weighted += v*w;
-        totalW += w;
-    });
-    let weighted_avg = weighted/totalW;
-
-    // 🔥 regression
-    let x = recent.map((_,i)=>i);
-    let y = recent;
-
-    let x_mean = x.reduce((a,b)=>a+b)/x.length;
-    let y_mean = y.reduce((a,b)=>a+b)/y.length;
-
-    let num=0, den=0;
-    for(let i=0;i<x.length;i++){
-        num += (x[i]-x_mean)*(y[i]-y_mean);
-        den += (x[i]-x_mean)**2;
-    }
-
-    let slope = num/den;
-    let intercept = y_mean - slope*x_mean;
-
-    let next_pred = slope*x.length + intercept;
-
-    // 🔥 probability
-    let score = 0;
-    score += low_streak * 2;
-    score += momentum;
-    score += volatility;
-    score += (recent.filter(v=>v<1.5).length/recent.length)*5;
-
-    let probability = Math.min(95, Math.max(5, score*10));
-
-    // 🔥 signal
-    let signal;
-    if(probability > 75) signal = "🚀 انفجار قوي جداً";
-    else if(probability > 55) signal = "🔥 دخول قوي";
-    else if(probability > 35) signal = "⚠️ متوسط";
-    else signal = "❌ خطر";
-
-    let low = Math.max(1.1, next_pred * 0.6);
-    let high = next_pred * 1.8;
-
-    let color = probability > 70 ? "#22c55e" :
-                probability > 50 ? "#f59e0b" :
-                "#ef4444";
-
-    document.getElementById("result").innerHTML = `
-        <h2 style="color:${color}">${signal}</h2>
-
-        <h3>🔥 ${probability.toFixed(1)}%</h3>
-
-        <hr>
-
-        <h3>🔮 التوقع القادم</h3>
-        <p>${next_pred.toFixed(2)}</p>
-        <p>${low.toFixed(2)} → ${high.toFixed(2)}</p>
-
-        <hr>
-
-        <p>⚡ Momentum: ${momentum.toFixed(2)}</p>
-        <p>🌊 Volatility: ${volatility.toFixed(2)}</p>
-        <p>📊 Avg: ${avg.toFixed(2)}</p>
-        <p>📈 Weighted: ${weighted_avg.toFixed(2)}</p>
-
-        <hr>
-
-        <p>Low Streak: ${low_streak}</p>
-    `;
 }
 
 </script>
