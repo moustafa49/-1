@@ -30,6 +30,7 @@ button {
     border-radius: 10px;
     margin: 5px;
     border: none;
+    cursor: pointer;
 }
 
 .add { background: #2563eb; color: white; }
@@ -74,12 +75,15 @@ let data = [];
 
 function add(){
     let val = parseFloat(document.getElementById("num").value);
-    if (!val && val !== 0) return;
+
+    // ✅ حل مشكلة الإدخال
+    if (isNaN(val)) return;
 
     data.push(val);
-    document.getElementById("num").value="";
+    document.getElementById("num").value = "";
     render();
 
+    // 🔥 تحليل أوتوماتيك
     if(data.length >= 3){
         analyze();
     }
@@ -88,11 +92,11 @@ function add(){
 function clearData(){
     data = [];
     render();
-    document.getElementById("result").innerHTML="--";
+    document.getElementById("result").innerHTML = "--";
 }
 
 function render(){
-    let html="";
+    let html = "";
     data.slice(-20).forEach(x=>{
         html += `<div class="box">${x}</div>`;
     });
@@ -107,26 +111,35 @@ async function analyze(){
             body: JSON.stringify({ values: data })
         });
 
+        // ✅ حماية من errors
+        if (!res.ok) throw new Error("Server error");
+
         const r = await res.json();
 
+        // 📈 الترند
         let trend = "ثابت";
         if(data.length >= 2){
-            trend = data[data.length-1] > data[data.length-2] ? "📈 صاعد" : "📉 هابط";
+            trend = data[data.length-1] > data[data.length-2]
+                ? "📈 صاعد"
+                : "📉 هابط";
         }
 
-        let color = r.signal.includes("قوي") ? "#22c55e" : "#ef4444";
+        // 🎨 لون الإشارة
+        let color = (r.signal && r.signal.includes("قوي"))
+            ? "#22c55e"
+            : "#ef4444";
 
         document.getElementById("result").innerHTML = `
-            <h3 style="color:${color}">${r.signal}</h3>
-            <p>🎯 ${r.target}</p>
-            <p>📊 ${r.confidence}</p>
-            <p>📈 Trend: ${r.trend}</p>
-            <p>⚡ Momentum: ${r.momentum}</p>
-            <p>🔥 Ratio: ${r.ratio}</p>
-            <p>🌊 Volatility: ${r.volatility}</p>
-            <p>AVG: ${r.avg}</p>
-            <p>MAX: ${r.max}</p>
-            <p>MIN: ${r.min}</p>
+            <h3 style="color:${color}">${r.signal || "-"}</h3>
+            <p>🎯 ${r.target || "-"}</p>
+            <p>📊 ${r.confidence || "-"}</p>
+            <p>📈 Trend: ${r.trend || trend}</p>
+            <p>⚡ Momentum: ${r.momentum || "-"}</p>
+            <p>🔥 Ratio: ${r.ratio || "-"}</p>
+            <p>🌊 Volatility: ${r.volatility || "-"}</p>
+            <p>AVG: ${r.avg || "-"}</p>
+            <p>MAX: ${r.max || "-"}</p>
+            <p>MIN: ${r.min || "-"}</p>
         `;
 
     }catch(e){
