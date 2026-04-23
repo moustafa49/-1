@@ -3,54 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crash Analyzer PRO+</title>
+<title>Crash AI</title>
 
 <style>
-body {
-    background: #0b0f1a;
-    color: white;
-    font-family: Arial;
-    text-align: center;
-}
+body { background:#0b0f1a; color:white; text-align:center; font-family:Arial; }
+.container { max-width:420px; margin:auto; }
 
-.container {
-    max-width: 420px;
-    margin: auto;
-}
+input { padding:10px; width:60%; border-radius:10px; border:none; }
+button { padding:10px; border-radius:10px; margin:5px; border:none; cursor:pointer; }
 
-input {
-    width: 65%;
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-}
-
-button {
-    padding: 12px;
-    border-radius: 10px;
-    margin: 5px;
-    border: none;
-    cursor: pointer;
-}
-
-.add { background: #2563eb; color: white; }
-.clear { background: red; color: white; }
-
-.grid { margin-top: 10px; }
+.add { background:#2563eb; color:white; }
+.clear { background:red; color:white; }
 
 .box {
-    display: inline-block;
-    background: #1e293b;
-    padding: 10px;
-    margin: 4px;
-    border-radius: 10px;
+    display:inline-block;
+    background:#1e293b;
+    padding:8px;
+    margin:4px;
+    border-radius:8px;
 }
 
 .result {
-    margin-top: 20px;
-    padding: 15px;
-    background: #111827;
-    border-radius: 15px;
+    margin-top:20px;
+    padding:15px;
+    background:#111827;
+    border-radius:15px;
 }
 </style>
 </head>
@@ -58,14 +35,13 @@ button {
 <body>
 
 <div class="container">
-<h2>🚀 Crash Analyzer PRO+</h2>
+<h2>🚀 Crash AI Predictor</h2>
 
-<input id="num" type="number" placeholder="ادخل رقم">
+<input id="num" type="number">
 <button class="add" onclick="add()">Add</button>
 <button class="clear" onclick="clearData()">Clear</button>
 
-<div class="grid" id="list"></div>
-
+<div id="list"></div>
 <div class="result" id="result">--</div>
 </div>
 
@@ -75,15 +51,12 @@ let data = [];
 
 function add(){
     let val = parseFloat(document.getElementById("num").value);
-
-    // ✅ حل مشكلة الإدخال
-    if (isNaN(val)) return;
+    if(isNaN(val)) return;
 
     data.push(val);
-    document.getElementById("num").value = "";
+    document.getElementById("num").value="";
     render();
 
-    // 🔥 تحليل أوتوماتيك
     if(data.length >= 3){
         analyze();
     }
@@ -92,11 +65,11 @@ function add(){
 function clearData(){
     data = [];
     render();
-    document.getElementById("result").innerHTML = "--";
+    document.getElementById("result").innerHTML="--";
 }
 
 function render(){
-    let html = "";
+    let html="";
     data.slice(-20).forEach(x=>{
         html += `<div class="box">${x}</div>`;
     });
@@ -108,43 +81,32 @@ async function analyze(){
         const res = await fetch("https://1-production-9423.up.railway.app/analyze", {
             method:"POST",
             headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ values: data })
+            body: JSON.stringify({ values:data })
         });
-
-        // ✅ حماية من errors
-        if (!res.ok) throw new Error("Server error");
 
         const r = await res.json();
 
-        // 📈 الترند
-        let trend = "ثابت";
-        if(data.length >= 2){
-            trend = data[data.length-1] > data[data.length-2]
-                ? "📈 صاعد"
-                : "📉 هابط";
-        }
-
-        // 🎨 لون الإشارة
-        let color = (r.signal && r.signal.includes("قوي"))
-            ? "#22c55e"
-            : "#ef4444";
-
         document.getElementById("result").innerHTML = `
-            <h3 style="color:${color}">${r.signal || "-"}</h3>
-            <p>🎯 ${r.target || "-"}</p>
-            <p>📊 ${r.confidence || "-"}</p>
-            <p>📈 Trend: ${r.trend || trend}</p>
-            <p>⚡ Momentum: ${r.momentum || "-"}</p>
-            <p>🔥 Ratio: ${r.ratio || "-"}</p>
-            <p>🌊 Volatility: ${r.volatility || "-"}</p>
-            <p>AVG: ${r.avg || "-"}</p>
-            <p>MAX: ${r.max || "-"}</p>
-            <p>MIN: ${r.min || "-"}</p>
+            <h2>${r.signal}</h2>
+            <p>${r.trend}</p>
+
+            <hr>
+
+            <h3>🔮 التوقع القادم</h3>
+            <p>من: ${r.prediction_low}</p>
+            <p>إلى: ${r.prediction_high}</p>
+            <p>متوسط: ${r.next_estimate}</p>
+
+            <hr>
+
+            <p>AVG: ${r.avg}</p>
+            <p>Momentum: ${r.momentum}</p>
+            <p>Pressure: ${r.pressure}</p>
+            <p>Volatility: ${r.volatility}</p>
         `;
 
     }catch(e){
-        console.log(e);
-        document.getElementById("result").innerHTML = "❌ API Error";
+        document.getElementById("result").innerHTML="❌ API Error";
     }
 }
 
