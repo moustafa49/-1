@@ -1,150 +1,127 @@
-<!DOCTYPE html><html lang="ar">
+<!DOCTYPE html>
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crash Analyzer PRO</title><style>
-body{
-  background:#070d1f;
-  color:white;
-  font-family:Arial;
-  text-align:center;
+<title>Crash Analyzer PRO</title>
+
+<style>
+body {
+    background:#0b0f1a;
+    color:white;
+    font-family:Arial;
+    text-align:center;
 }
 
-h1{margin-top:20px;}
-
-input{
-  width:60%;
-  padding:12px;
-  border-radius:12px;
-  border:none;
+.container {
+    max-width:400px;
+    margin:auto;
 }
 
-button{
-  padding:10px 15px;
-  border:none;
-  border-radius:10px;
-  margin:5px;
-  cursor:pointer;
+input {
+    width:65%;
+    padding:12px;
+    border-radius:10px;
+    border:none;
 }
 
-.add{background:#2563eb;color:white;}
-.clear{background:#dc2626;color:white;}
-
-.grid{
-  margin-top:20px;
+button {
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    margin:5px;
 }
 
-.box{
-  display:inline-block;
-  padding:12px;
-  margin:5px;
-  border-radius:12px;
-  background:#1e40af;
-  min-width:60px;
+.add {background:#2563eb; color:white;}
+.clear {background:red; color:white;}
+
+.grid {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+    margin-top:15px;
 }
 
-.green{background:#16a34a;}
-.red{background:#dc2626;}
-.orange{background:#f59e0b;}
-
-.result{
-  margin-top:20px;
-  padding:20px;
-  background:#0f172a;
-  border-radius:15px;
+.box {
+    padding:10px 15px;
+    border-radius:10px;
+    background:#1e293b;
 }
 
-.big{
-  font-size:28px;
-  margin:10px 0;
+.result {
+    margin-top:20px;
+    padding:15px;
+    background:#111827;
+    border-radius:15px;
 }
+</style>
+</head>
 
-.stat{
-  display:inline-block;
-  margin:10px;
-  padding:10px;
-  background:#111827;
-  border-radius:10px;
-}
-</style></head><body><h1>🚀 Crash Analyzer PRO</h1><input id="num" placeholder="أدخل رقم">
-<button class="add" onclick="addNum()">Add</button>
-<button class="clear" onclick="clearAll()">Clear</button><div class="grid" id="list"></div><div class="result">
-  <div class="big" id="res">--</div>
-  <div id="target"></div>  <div class="stat" id="confidence"></div>
-  <div class="stat" id="trend"></div>  <div class="stat" id="avg"></div>
-  <div class="stat" id="max"></div>
-  <div class="stat" id="min"></div>
-</div><script>
-let data = []
+<body>
 
-function addNum(){
-  let val = parseFloat(document.getElementById("num").value)
-  if(!val) return
+<div class="container">
+<h2>🚀 Crash Analyzer PRO</h2>
 
-  data.push(val)
-  document.getElementById("num").value=""
+<input id="num" placeholder="أدخل رقم">
+<button class="add" onclick="add()">Add</button>
+<button class="clear" onclick="clearAll()">Clear</button>
 
-  render()
-  analyze() // 🔥 اوتوماتيك
-}
+<div class="grid" id="list"></div>
 
-function render(){
-  let html=""
-  data.slice(-18).forEach(n=>{
-    let cls="box"
-    if(n>2) cls+=" green"
-    if(n>10) cls+=" red"
-    if(n>5 && n<=10) cls+=" orange"
-    html+=`<div class="${cls}">${n}</div>`
-  })
-  document.getElementById("list").innerHTML=html
-}
+<div class="result" id="result">--</div>
+</div>
 
-function analyze(){
-  if(data.length<5){
-    document.getElementById("res").innerText="دخل بيانات أكتر"
-    return
-  }
+<script>
+let data = [];
 
-  let last=data.slice(-10)
-  let avg=last.reduce((a,b)=>a+b,0)/last.length
-  let max=Math.max(...data)
-  let min=Math.min(...data)
+// 👇 حط هنا لينك Render بتاعك
+const API = "https://YOUR-API.onrender.com/analyze";
 
-  let highCount = last.filter(x=>x>2).length
-  let trend = highCount > 5 ? "📈 صاعد" : "📉 هابط"
+function add(){
+    let val = parseFloat(document.getElementById("num").value);
+    if(!val) return;
 
-  let result=""
-  let target=""
-  let confidence=0
-
-  if(avg>3 || max>10){
-    result="🔥 دخول قوي"
-    target="5x → 7x"
-    confidence=80
-  }else if(avg>2){
-    result="⚖️ متوسط"
-    target="2x → 5x"
-    confidence=60
-  }else{
-    result="📉 ضعيف"
-    target="1x → 2x"
-    confidence=40
-  }
-
-  document.getElementById("res").innerText=result
-  document.getElementById("target").innerText=target
-  document.getElementById("confidence").innerText="الثقة: "+confidence+"%"
-  document.getElementById("trend").innerText="الموجة: "+trend
-  document.getElementById("avg").innerText="AVG: "+avg.toFixed(2)
-  document.getElementById("max").innerText="MAX: "+max
-  document.getElementById("min").innerText="MIN: "+min
+    data.push(val);
+    document.getElementById("num").value="";
+    render();
+    analyze();
 }
 
 function clearAll(){
-  data=[]
-  render()
-  document.getElementById("res").innerText="--"
+    data = [];
+    render();
+    document.getElementById("result").innerHTML="--";
 }
-</script></body>
+
+function render(){
+    let html="";
+    data.slice().reverse().forEach(x=>{
+        html += `<div class="box">${x}</div>`;
+    });
+    document.getElementById("list").innerHTML = html;
+}
+
+async function analyze(){
+    if(data.length < 5) return;
+
+    let res = await fetch(API,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify(data)
+    });
+
+    let r = await res.json();
+
+    document.getElementById("result").innerHTML = `
+        <h3>${r.result}</h3>
+        🎯 ${r.target}<br>
+        📊 ${r.confidence}<br>
+        📈 ${r.trend}<br><br>
+        AVG: ${r.avg} | MAX: ${r.max} | MIN: ${r.min}
+    `;
+}
+</script>
+
+</body>
 </html>
