@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crash AI PRO</title>
+<title>Crash AI ELITE</title>
 
 <style>
 body {
@@ -33,8 +33,8 @@ button {
     cursor: pointer;
 }
 
-.add { background: #2563eb; color: white; }
-.clear { background: red; color: white; }
+.add { background: #2563eb; }
+.clear { background: red; }
 
 .box {
     display: inline-block;
@@ -47,8 +47,8 @@ button {
 .result {
     margin-top: 20px;
     padding: 20px;
-    background: linear-gradient(135deg,#020617,#0f172a);
     border-radius: 20px;
+    background: linear-gradient(135deg,#020617,#0f172a);
 }
 </style>
 </head>
@@ -56,7 +56,7 @@ button {
 <body>
 
 <div class="container">
-<h2>🚀 Crash AI PRO</h2>
+<h2>🚀 Crash AI ELITE</h2>
 
 <input id="num" type="number">
 <button class="add" onclick="add()">Add</button>
@@ -78,7 +78,7 @@ function add(){
     document.getElementById("num").value="";
     render();
 
-    if(data.length >= 5){
+    if(data.length >= 10){
         analyze();
     }
 }
@@ -91,7 +91,7 @@ function clearData(){
 
 function render(){
     let html="";
-    data.slice(-20).forEach(x=>{
+    data.slice(-30).forEach(x=>{
         html += `<div class="box">${x}</div>`;
     });
     document.getElementById("list").innerHTML = html;
@@ -107,26 +107,31 @@ async function analyze(){
 
         const r = await res.json();
 
-        let color = r.signal.includes("🚀") ? "#22c55e" :
-                    r.signal.includes("🔥") ? "#f59e0b" :
-                    r.signal.includes("⚠️") ? "#eab308" :
+        let color = r.probability > 70 ? "#22c55e" :
+                    r.probability > 50 ? "#f59e0b" :
                     "#ef4444";
 
         document.getElementById("result").innerHTML = `
             <h2 style="color:${color}">${r.signal}</h2>
 
-            <hr>
-
-            <h3>🔮 التوقع</h3>
-            <p>${r.prediction_low} → ${r.prediction_high}</p>
-            <p>متوسط: ${r.next_estimate}</p>
+            <h3>🔥 Probability: ${r.probability}%</h3>
 
             <hr>
 
-            <p>Score: ${r.score}</p>
-            <p>Low Streak: ${r.low_streak}</p>
-            <p>AVG: ${r.avg}</p>
-            <p>Volatility: ${r.volatility}</p>
+            <h3>🔮 Next Prediction</h3>
+            <p>${r.predicted_next}</p>
+            <p>${r.range_low} → ${r.range_high}</p>
+
+            <hr>
+
+            <p>⚡ Momentum: ${r.momentum}</p>
+            <p>🌊 Volatility: ${r.volatility}</p>
+            <p>📊 Weighted Avg: ${r.weighted_avg}</p>
+            <p>📉 Smooth: ${r.smooth}</p>
+
+            <hr>
+
+            <p>🧠 Fake Pattern: ${r.fake_pattern ? "⚠️ نعم" : "✅ طبيعي"}</p>
         `;
 
     }catch(e){
