@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import statistics
+import numpy as np
 
 app = FastAPI()
 
-# ✅ CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,75 +13,88 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def home():
-    return {"msg": "API working"}
-
 @app.post("/analyze")
 def analyze(data: dict):
 
     values = data.get("values", [])
 
-    if len(values) < 5:
-        return {"error": "Need at least 5 values"}
+    if len(values) < 10:
+        return {"error": "Need more data"}
 
-    last = values[-10:]
+    recent = values[-25:]
 
-    avg = sum(values) / len(values)
-    volatility = statistics.stdev(values)
+    avg = np.mean(recent)
+    volatility = np.std(recent)
 
-    # 🔥 low streak
+    # 🔥 weighted average (الأحدث أهم)
+    weights = np.arange(1, len(recent)+1)
+    weighted_avg = np.sum(recent * weights) / np.sum(weights)
+
+    # 🔥 regression (توقع فعلي)
+    x = np.arange(len(recent))
+    y = np.array(recent)
+
+    coef = np.polyfit(x, y, 1)
+    next_pred = coef[0]*len(recent) + coef[1]
+
+    # 🔥 smoothing
+    smooth = np.convolve(recent, np.ones(3)/3, mode='valid')[-1]
+
+    # 🔥 streaks
     low_streak = 0
-    for v in reversed(last):
+    for v in reversed(recent):
         if v < 1.5:
             low_streak += 1
         else:
             break
 
-    # 🔥 ضغط
-    low_count = sum(1 for v in last if v < 1.5)
+    # 🔥 fake pattern detection
+    fake_pattern = False
+    if volatility < 0.5:
+        fake_pattern = True
 
     # ⚡ momentum
-    momentum = last[-1] - last[-2]
+    momentum = recent[-1] - recent[-2]
+
+    # 🔥 pressure
+    low_pressure = sum(1 for v in recent if v < 1.5) / len(recent)
 
     # 🧠 score
     score = 0
+    score += low_streak * 2
+    score += momentum
+    score += volatility
+    score += low_pressure * 5
 
-    if low_streak >= 3:
-        score += 2
+    if fake_pattern:
+        score -= 3
 
-    if low_count >= 6:
-        score += 2
+    probability = max(5, min(95, round(score * 10, 2)))
 
-    if momentum > 0:
-        score += 1
-
-    if volatility > 2:
-        score += 1
-
-    # 🎯 decision
-    if score >= 5:
-        signal = "🚀 انفجار قوي جدًا"
-        pred_low, pred_high = 5, 20
-    elif score >= 4:
+    # 🔮 prediction logic
+    if probability > 75:
+        signal = "🚀 انفجار قوي جداً"
+    elif probability > 55:
         signal = "🔥 دخول قوي"
-        pred_low, pred_high = 3, 10
-    elif score >= 3:
+    elif probability > 35:
         signal = "⚠️ متوسط"
-        pred_low, pred_high = 2, 5
     else:
         signal = "❌ خطر"
-        pred_low, pred_high = 1.1, 2
 
-    next_estimate = round((pred_low + pred_high) / 2, 2)
+    # 🎯 range ذكي
+    low = round(max(1.1, next_pred * 0.6),2)
+    high = round(next_pred * 1.8,2)
 
     return {
         "signal": signal,
-        "score": score,
-        "prediction_low": pred_low,
-        "prediction_high": pred_high,
-        "next_estimate": next_estimate,
-        "low_streak": low_streak,
+        "probability": probability,
+        "predicted_next": round(next_pred,2),
+        "range_low": low,
+        "range_high": high,
         "avg": round(avg,2),
-        "volatility": round(volatility,2)
+        "volatility": round(volatility,2),
+        "momentum": round(momentum,2),
+        "weighted_avg": round(weighted_avg,2),
+        "smooth": round(smooth,2),
+        "fake_pattern": fake_pattern
     }
