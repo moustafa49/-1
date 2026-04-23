@@ -1,43 +1,38 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-class Data(BaseModel):
-    values: list[float]
+# ✅ أهم سطر (CORS)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # ممكن تخليها موقعك بس بعدين
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def home():
     return {"msg": "API working"}
 
 @app.post("/analyze")
-def analyze(data: Data):
-    values = data.values
+def analyze(data: dict):
+    values = data.get("values", [])
 
     if not values:
-        return {"error": "no data"}
+        return {"error": "No data"}
 
     avg = sum(values) / len(values)
     mx = max(values)
     mn = min(values)
 
-    # تحليل بسيط ذكي
-    high = [v for v in values if v >= 2]
-    low = [v for v in values if v < 2]
-
-    if len(high) > len(low):
-        signal = "🔥 دخول قوي"
-        target = "5x - 8x"
-        confidence = "85%"
-    else:
-        signal = "⚠️ حذر"
-        target = "2x - 3x"
-        confidence = "60%"
+    signal = "🔥 دخول قوي" if avg > 2 else "❌ ضعيف"
 
     return {
         "signal": signal,
-        "target": target,
-        "confidence": confidence,
+        "target": "5x → 7x",
+        "confidence": "80%",
         "avg": round(avg, 2),
         "max": mx,
         "min": mn
