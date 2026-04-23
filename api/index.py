@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
-import statistics
+import json
+import os
 
 app = FastAPI()
 
@@ -13,75 +14,90 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+DATA_FILE = "history.json"
+
+# تحميل بيانات قديمة
+def load_data():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+# حفظ بيانات
+def save_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f)
+
 @app.post("/analyze")
 def analyze(data: dict):
 
     values = data.get("values", [])
-
-    if len(values) < 5:
+    if len(values) < 6:
         return {"error": "Need more data"}
+
+    # 🔥 learning storage
+    history = load_data()
+    history.extend(values[-5:])
+    save_data(history[-500:])  # حفظ آخر 500
 
     recent = values[-25:]
 
-    avg = float(np.mean(recent))
-    volatility = float(np.std(recent))
+    avg = np.mean(recent)
+    volatility = np.std(recent)
 
-    # 🔥 weighted avg
+    # weighted
     weights = np.arange(1, len(recent)+1)
-    weighted_avg = float(np.sum(np.array(recent)*weights) / np.sum(weights))
+    weighted_avg = np.sum(recent * weights) / np.sum(weights)
 
-    # 🔥 regression prediction
+    # regression
     x = np.arange(len(recent))
     y = np.array(recent)
-
     coef = np.polyfit(x, y, 1)
-    next_pred = float(coef[0]*len(recent) + coef[1])
+    next_pred = coef[0]*len(recent) + coef[1]
 
-    # 🔥 momentum
-    momentum = recent[-1] - recent[-2] if len(recent) > 1 else 0
+    # streak
+    low_streak = sum(1 for v in reversed(recent) if v < 1.5)
 
-    # 🔥 low streak
-    low_streak = 0
-    for v in reversed(recent):
-        if v < 1.5:
-            low_streak += 1
-        else:
-            break
+    # momentum
+    momentum = recent[-1] - recent[-2]
 
-    # 🔥 fake pattern
-    fake_pattern = volatility < 0.5
+    # pressure
+    low_pressure = sum(1 for v in recent if v < 1.5)/len(recent)
 
-    # 🔥 score
+    # 🧠 learning boost (من الداتا القديمة)
+    history_avg = np.mean(history) if history else avg
+
     score = 0
     score += low_streak * 2
     score += momentum
     score += volatility
-    score += (sum(1 for v in recent if v < 1.5) / len(recent)) * 5
+    score += low_pressure * 4
 
-    if fake_pattern:
-        score -= 3
+    if avg < history_avg:
+        score += 2
 
-    probability = max(5, min(95, round(score * 10, 2)))
+    probability = max(5, min(95, round(score * 10,2)))
 
-    # 🔮 signal
     if probability > 75:
-        signal = "🚀 انفجار قوي جداً"
+        signal = "🚀 انفجار عالي"
     elif probability > 55:
-        signal = "🔥 دخول قوي"
+        signal = "🔥 فرصة قوية"
     elif probability > 35:
         signal = "⚠️ متوسط"
     else:
         signal = "❌ خطر"
 
-    # 🎯 range
-    low = round(max(1.1, next_pred * 0.6),2)
-    high = round(next_pred * 1.8,2)
+    low = max(1.1, next_pred * 0.6)
+    high = next_pred * 1.8
 
     return {
         "signal": signal,
         "probability": probability,
-        "predicted_next": round(next_pred,2),
-        "range_low": low,
-        "range_high": high,
+        "predicted": round(next_pred,2),
+        "range_low": round(low,2),
+        "range_high": round(high,2),
         "avg": round(avg,2),
-        "vol
+        "volatility": round(volatility,2),
+        "momentum": round(momentum,2),
+        "history_avg": round(history_avg,2)
+    }
