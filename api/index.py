@@ -4,6 +4,7 @@ import statistics
 
 app = FastAPI()
 
+# ✅ CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,67 +21,67 @@ def home():
 def analyze(data: dict):
 
     values = data.get("values", [])
-    if not values:
-        return {"error": "No data"}
+
+    if len(values) < 5:
+        return {"error": "Need at least 5 values"}
+
+    last = values[-10:]
 
     avg = sum(values) / len(values)
-    mx = max(values)
-    mn = min(values)
+    volatility = statistics.stdev(values)
 
-    # 🧠 weighted avg
-    weights = list(range(1, len(values)+1))
-    weighted_avg = sum(v*w for v,w in zip(values, weights)) / sum(weights)
+    # 🔥 low streak
+    low_streak = 0
+    for v in reversed(last):
+        if v < 1.5:
+            low_streak += 1
+        else:
+            break
+
+    # 🔥 ضغط
+    low_count = sum(1 for v in last if v < 1.5)
 
     # ⚡ momentum
-    momentum = sum(values[-3:]) - sum(values[-6:-3]) if len(values) >= 6 else 0
+    momentum = last[-1] - last[-2]
 
-    # 🔥 pressure
-    low_count = sum(1 for v in values[-10:] if v < 1.5)
-    pressure = low_count / min(len(values),10)
+    # 🧠 score
+    score = 0
 
-    # 🌊 volatility
-    volatility = statistics.stdev(values) if len(values) > 1 else 0
+    if low_streak >= 3:
+        score += 2
 
-    # 🚀 spike
-    spike = max(values[-5:]) if len(values) >= 5 else mx
+    if low_count >= 6:
+        score += 2
 
-    # 📈 trend
-    trend = "📈 صاعد" if momentum > 0 else "📉 هابط"
-
-    # 🧠 signal
-    if pressure > 0.6 and spike < 5:
-        signal = "🚀 انفجار قريب"
-    elif weighted_avg > 2 and momentum > 0:
-        signal = "🔥 دخول قوي"
-    elif weighted_avg < 1.5:
-        signal = "❌ خطر"
-    else:
-        signal = "⏳ انتظار"
-
-    # 🔮 prediction (نقطة مهمة)
-    base = weighted_avg
-
-    # تعديل حسب الحالة
-    if pressure > 0.6:
-        base += 1.5
     if momentum > 0:
-        base += 0.5
-    if volatility > 2:
-        base += 0.7
+        score += 1
 
-    prediction_low = round(max(1.1, base * 0.7), 2)
-    prediction_high = round(base * 1.6, 2)
-    next_estimate = round((prediction_low + prediction_high) / 2, 2)
+    if volatility > 2:
+        score += 1
+
+    # 🎯 decision
+    if score >= 5:
+        signal = "🚀 انفجار قوي جدًا"
+        pred_low, pred_high = 5, 20
+    elif score >= 4:
+        signal = "🔥 دخول قوي"
+        pred_low, pred_high = 3, 10
+    elif score >= 3:
+        signal = "⚠️ متوسط"
+        pred_low, pred_high = 2, 5
+    else:
+        signal = "❌ خطر"
+        pred_low, pred_high = 1.1, 2
+
+    next_estimate = round((pred_low + pred_high) / 2, 2)
 
     return {
         "signal": signal,
-        "trend": trend,
+        "score": score,
+        "prediction_low": pred_low,
+        "prediction_high": pred_high,
+        "next_estimate": next_estimate,
+        "low_streak": low_streak,
         "avg": round(avg,2),
-        "weighted_avg": round(weighted_avg,2),
-        "momentum": round(momentum,2),
-        "pressure": round(pressure,2),
-        "volatility": round(volatility,2),
-        "prediction_low": prediction_low,
-        "prediction_high": prediction_high,
-        "next_estimate": next_estimate
+        "volatility": round(volatility,2)
     }
