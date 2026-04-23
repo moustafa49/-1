@@ -7,119 +7,96 @@
 
 <style>
 body {
-    background:#0b0f1a;
-    color:white;
-    font-family:Arial;
-    text-align:center;
+    background: #0b0f1a;
+    color: white;
+    font-family: Arial;
+    text-align: center;
 }
 
 .container {
-    max-width:400px;
-    margin:auto;
+    max-width: 400px;
+    margin: auto;
 }
 
 input {
-    width:65%;
-    padding:12px;
-    border-radius:10px;
-    border:none;
+    width: 70%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
 }
 
 button {
-    padding:12px;
-    border:none;
-    border-radius:10px;
-    margin:5px;
+    padding: 12px;
+    border-radius: 10px;
+    margin: 5px;
+    cursor: pointer;
 }
 
-.add {background:#2563eb; color:white;}
-.clear {background:red; color:white;}
-
-.grid {
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    justify-content:center;
-    margin-top:15px;
-}
+.add { background: blue; color: white; }
+.clear { background: red; color: white; }
 
 .box {
-    padding:10px 15px;
-    border-radius:10px;
-    background:#1e293b;
-}
-
-.result {
-    margin-top:20px;
-    padding:15px;
-    background:#111827;
-    border-radius:15px;
+    background: #111827;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 15px;
 }
 </style>
 </head>
 
 <body>
 
+<h1>🚀 Crash Analyzer PRO</h1>
+
 <div class="container">
-<h2>🚀 Crash Analyzer PRO</h2>
+    <input id="num" placeholder="أدخل رقم">
+    <button class="add" onclick="add()">Add</button>
+    <button class="clear" onclick="clearAll()">Clear</button>
 
-<input id="num" placeholder="أدخل رقم">
-<button class="add" onclick="add()">Add</button>
-<button class="clear" onclick="clearAll()">Clear</button>
+    <div id="list"></div>
 
-<div class="grid" id="list"></div>
-
-<div class="result" id="result">--</div>
+    <div class="box" id="result">--</div>
 </div>
 
 <script>
-let data = [];
+let numbers = [];
 
-// 👇 حط هنا لينك Render بتاعك
-const API = "https://YOUR-API.onrender.com/analyze";
-
-function add(){
+function add() {
     let val = parseFloat(document.getElementById("num").value);
-    if(!val) return;
+    if (!isNaN(val)) {
+        numbers.push(val);
+        render();
+    }
+}
 
-    data.push(val);
-    document.getElementById("num").value="";
+function clearAll() {
+    numbers = [];
     render();
+    document.getElementById("result").innerHTML = "--";
+}
+
+function render() {
+    document.getElementById("list").innerHTML = numbers.join(" | ");
     analyze();
 }
 
-function clearAll(){
-    data = [];
-    render();
-    document.getElementById("result").innerHTML="--";
-}
-
-function render(){
-    let html="";
-    data.slice().reverse().forEach(x=>{
-        html += `<div class="box">${x}</div>`;
+function analyze() {
+    fetch("https://1-production-9423.up.railway.app/analyze", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ numbers })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("result").innerHTML = `
+            AVG: ${data.avg} <br>
+            MAX: ${data.max} <br>
+            MIN: ${data.min} <br>
+            🔥 ${data.signal}
+        `;
     });
-    document.getElementById("list").innerHTML = html;
-}
-
-async function analyze(){
-    if(data.length < 5) return;
-
-    let res = await fetch(API,{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify(data)
-    });
-
-    let r = await res.json();
-
-    document.getElementById("result").innerHTML = `
-        <h3>${r.result}</h3>
-        🎯 ${r.target}<br>
-        📊 ${r.confidence}<br>
-        📈 ${r.trend}<br><br>
-        AVG: ${r.avg} | MAX: ${r.max} | MIN: ${r.min}
-    `;
 }
 </script>
 
