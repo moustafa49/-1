@@ -35,6 +35,7 @@ button {
 
 .add { background: #2563eb; color: white; }
 .clear { background: red; color: white; }
+.analyze { background: #ccc; }
 
 .box {
     background: #1a2238;
@@ -58,7 +59,7 @@ button {
 <div id="values"></div>
 
 <br>
-<button onclick="analyze()">Analyze</button>
+<button class="analyze" onclick="analyze()">Analyze</button>
 
 <div id="result"></div>
 
@@ -67,7 +68,7 @@ let values = [];
 
 function addValue() {
     let val = parseFloat(document.getElementById("input").value);
-    if (!val) return;
+    if (!val && val !== 0) return;
 
     values.push(val);
 
@@ -86,24 +87,33 @@ function clearAll() {
 }
 
 async function analyze() {
-    const res = await fetch("https://YOUR-RAILWAY-LINK/analyze", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ values: values })
-    });
+    try {
+        const res = await fetch("https://1-production-9423.up.railway.app/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                values: values
+            })
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    document.getElementById("result").innerHTML = `
-        <h2>${data.signal}</h2>
-        <p>Target: ${data.target}</p>
-        <p>Confidence: ${data.confidence}</p>
-        <p>AVG: ${data.avg}</p>
-        <p>MAX: ${data.max}</p>
-        <p>MIN: ${data.min}</p>
-    `;
+        document.getElementById("result").innerHTML = `
+            <div style="background:#111827;padding:15px;border-radius:10px;margin-top:10px">
+                <h2>${data.signal}</h2>
+                <p>🎯 Target: ${data.target}</p>
+                <p>📊 Confidence: ${data.confidence}</p>
+                <p>AVG: ${data.avg}</p>
+                <p>MAX: ${data.max}</p>
+                <p>MIN: ${data.min}</p>
+            </div>
+        `;
+    } catch (err) {
+        console.log(err);
+        alert("❌ في مشكلة في الاتصال بالـ API");
+    }
 }
 </script>
 
