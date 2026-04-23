@@ -7,26 +7,27 @@
 
 <style>
 body {
-    background: #0b0f1a;
+    background: #0f172a;
     color: white;
     font-family: Arial;
     text-align: center;
+    padding: 20px;
 }
 
-.container {
-    max-width: 400px;
-    margin: auto;
+h1 {
+    margin-bottom: 20px;
 }
 
 input {
-    width: 70%;
-    padding: 12px;
+    padding: 10px;
+    width: 60%;
     border-radius: 10px;
     border: none;
+    outline: none;
 }
 
 button {
-    padding: 12px;
+    padding: 10px 15px;
     border: none;
     border-radius: 10px;
     margin: 5px;
@@ -35,14 +36,18 @@ button {
 
 .add { background: #2563eb; color: white; }
 .clear { background: red; color: white; }
-.analyze { background: #ccc; }
+.analyze { background: #9ca3af; }
+
+#values {
+    margin-top: 15px;
+}
 
 .box {
-    background: #1a2238;
+    display: inline-block;
+    background: #1e293b;
     padding: 10px;
     margin: 5px;
     border-radius: 10px;
-    display: inline-block;
 }
 </style>
 </head>
@@ -54,16 +59,19 @@ button {
 <input type="number" id="input" placeholder="ادخل رقم">
 <button class="add" onclick="addValue()">Add</button>
 <br>
+
 <button class="clear" onclick="clearAll()">Clear</button>
 
 <div id="values"></div>
 
 <br>
+
 <button class="analyze" onclick="analyze()">Analyze</button>
 
 <div id="result"></div>
 
 <script>
+
 let values = [];
 
 function addValue() {
@@ -75,8 +83,8 @@ function addValue() {
     let div = document.createElement("div");
     div.className = "box";
     div.innerText = val;
-    document.getElementById("values").appendChild(div);
 
+    document.getElementById("values").appendChild(div);
     document.getElementById("input").value = "";
 }
 
@@ -88,7 +96,7 @@ function clearAll() {
 
 async function analyze() {
     try {
-        const res = await fetch("https://1-production-9423.up.railway.app/analyze", {
+        const res = await fetch("https://on-9423.up.railway.app/analyze", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -98,23 +106,27 @@ async function analyze() {
             })
         });
 
+        if (!res.ok) throw new Error("Server error");
+
         const data = await res.json();
 
         document.getElementById("result").innerHTML = `
-            <div style="background:#111827;padding:15px;border-radius:10px;margin-top:10px">
-                <h2>${data.signal}</h2>
-                <p>🎯 Target: ${data.target}</p>
-                <p>📊 Confidence: ${data.confidence}</p>
-                <p>AVG: ${data.avg}</p>
-                <p>MAX: ${data.max}</p>
-                <p>MIN: ${data.min}</p>
-            </div>
+        <div style="background:#111827;padding:15px;border-radius:10px;margin-top:10px">
+            <h2>${data.signal}</h2>
+            <p>🎯 Target: ${data.target}</p>
+            <p>📊 Confidence: ${data.confidence}</p>
+            <p>AVG: ${data.avg}</p>
+            <p>MAX: ${data.max}</p>
+            <p>MIN: ${data.min}</p>
+        </div>
         `;
+
     } catch (err) {
         console.log(err);
-        alert("❌ في مشكلة في الاتصال بالـ API");
+        alert("❌ مشكلة في الاتصال بال API");
     }
 }
+
 </script>
 
 </body>
