@@ -1,0 +1,150 @@
+<!DOCTYPE html><html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crash Analyzer PRO</title><style>
+body{
+  background:#070d1f;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+h1{margin-top:20px;}
+
+input{
+  width:60%;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:10px;
+  margin:5px;
+  cursor:pointer;
+}
+
+.add{background:#2563eb;color:white;}
+.clear{background:#dc2626;color:white;}
+
+.grid{
+  margin-top:20px;
+}
+
+.box{
+  display:inline-block;
+  padding:12px;
+  margin:5px;
+  border-radius:12px;
+  background:#1e40af;
+  min-width:60px;
+}
+
+.green{background:#16a34a;}
+.red{background:#dc2626;}
+.orange{background:#f59e0b;}
+
+.result{
+  margin-top:20px;
+  padding:20px;
+  background:#0f172a;
+  border-radius:15px;
+}
+
+.big{
+  font-size:28px;
+  margin:10px 0;
+}
+
+.stat{
+  display:inline-block;
+  margin:10px;
+  padding:10px;
+  background:#111827;
+  border-radius:10px;
+}
+</style></head><body><h1>🚀 Crash Analyzer PRO</h1><input id="num" placeholder="أدخل رقم">
+<button class="add" onclick="addNum()">Add</button>
+<button class="clear" onclick="clearAll()">Clear</button><div class="grid" id="list"></div><div class="result">
+  <div class="big" id="res">--</div>
+  <div id="target"></div>  <div class="stat" id="confidence"></div>
+  <div class="stat" id="trend"></div>  <div class="stat" id="avg"></div>
+  <div class="stat" id="max"></div>
+  <div class="stat" id="min"></div>
+</div><script>
+let data = []
+
+function addNum(){
+  let val = parseFloat(document.getElementById("num").value)
+  if(!val) return
+
+  data.push(val)
+  document.getElementById("num").value=""
+
+  render()
+  analyze() // 🔥 اوتوماتيك
+}
+
+function render(){
+  let html=""
+  data.slice(-18).forEach(n=>{
+    let cls="box"
+    if(n>2) cls+=" green"
+    if(n>10) cls+=" red"
+    if(n>5 && n<=10) cls+=" orange"
+    html+=`<div class="${cls}">${n}</div>`
+  })
+  document.getElementById("list").innerHTML=html
+}
+
+function analyze(){
+  if(data.length<5){
+    document.getElementById("res").innerText="دخل بيانات أكتر"
+    return
+  }
+
+  let last=data.slice(-10)
+  let avg=last.reduce((a,b)=>a+b,0)/last.length
+  let max=Math.max(...data)
+  let min=Math.min(...data)
+
+  let highCount = last.filter(x=>x>2).length
+  let trend = highCount > 5 ? "📈 صاعد" : "📉 هابط"
+
+  let result=""
+  let target=""
+  let confidence=0
+
+  if(avg>3 || max>10){
+    result="🔥 دخول قوي"
+    target="5x → 7x"
+    confidence=80
+  }else if(avg>2){
+    result="⚖️ متوسط"
+    target="2x → 5x"
+    confidence=60
+  }else{
+    result="📉 ضعيف"
+    target="1x → 2x"
+    confidence=40
+  }
+
+  document.getElementById("res").innerText=result
+  document.getElementById("target").innerText=target
+  document.getElementById("confidence").innerText="الثقة: "+confidence+"%"
+  document.getElementById("trend").innerText="الموجة: "+trend
+  document.getElementById("avg").innerText="AVG: "+avg.toFixed(2)
+  document.getElementById("max").innerText="MAX: "+max
+  document.getElementById("min").innerText="MIN: "+min
+}
+
+function clearAll(){
+  data=[]
+  render()
+  document.getElementById("res").innerText="--"
+}
+</script></body>
+</html>
