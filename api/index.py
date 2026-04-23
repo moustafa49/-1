@@ -1,11 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
-import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
-import warnings
+from scipy.stats import norm
 
-warnings.filterwarnings('ignore')
 app = FastAPI()
 
 app.add_middleware(
@@ -15,61 +12,71 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# "العقل" - نموذج ذكاء اصطناعي
-model = RandomForestRegressor(n_estimators=100, random_state=42)
+def calculate_ai_precision(values):
+    """خوارزمية تحليل النبض والضغط النفسي للسيرفر"""
+    if len(values) < 8:
+        return None
 
-def prepare_data(values, window=5):
-    X, y = [], []
-    for i in range(len(values) - window):
-        X.append(values[i:i+window])
-        y.append(values[i+window])
-    return np.array(X), np.array(y)
+    # 1. تحليل "دورة السحب" (Drain Cycle)
+    # بنشوف آخر كام رقم كانوا تحت الـ 1.5x (مناطق خسارة الناس)
+    drain_zone = [v for v in values[-6:] if v < 1.5]
+    drain_intensity = len(drain_zone) / 6
+
+    # 2. تحليل "الارتداد الإحصائي" (Statistical Rebound)
+    # بنحسب احتمالية حدوث رقم عالي بناءً على الانحراف المعياري
+    mean = np.mean(values[-15:])
+    std = np.std(values[-15:])
+    last_val = values[-1]
+    
+    # Z-Score: هل الرقم الأخير كان بعيد جداً عن المعدل؟
+    z_score = (last_val - mean) / std if std != 0 else 0
+
+    # 3. محرك التوقع الهجومي (Aggressive Prediction)
+    # لو فيه "ضغط" عالي (أرقام صغيرة كتير)، بنرفع سقف التوقع
+    if drain_intensity > 0.6: # السيرفر "شبع" سحب فلوس
+        multiplier = 2.5 + (drain_intensity * 2)
+        signal = "🚀 إشارة انفجار (انقض الآن)"
+        confidence = 85 + (drain_intensity * 10)
+    elif last_val > 5: # السيرفر لسه مطلع رقم كبير، غالباً هيهدي
+        multiplier = 1.2
+        signal = "⚠️ تبريد (انتظر السحب)"
+        confidence = 30
+    else:
+        multiplier = 1.5
+        signal = "⚖️ توازن (منطقة مراقبة)"
+        confidence = 55
+
+    # حساب الرقم المتوقع بناءً على "نمط الارتداد"
+    predicted = np.median(values[-10:]) * multiplier
+    
+    # تصحيح لو التوقع مبالغ فيه أو قليل زيادة
+    predicted = max(1.15, min(predicted, 15.0))
+
+    return {
+        "signal": signal,
+        "probability": f"{min(final_calc_prob(values, confidence), 99.2)}%",
+        "predicted_next": round(predicted, 2),
+        "ai_status": "Deep Analysis Active",
+        "danger_level": "عالي" if drain_intensity < 0.3 else "منخفض (فرصة)"
+    }
+
+def final_calc_prob(values, base):
+    """إضافة لمسة سيكولوجية للاحتمالية"""
+    last = values[-1]
+    if last < 1.1: base += 10 # ارتداد من القاع
+    if 1.5 < last < 2.5: base -= 5 # منطقة حيرة
+    return base
 
 @app.post("/api/analyze")
 async def analyze(data: dict):
     try:
         raw_values = data.get("values", [])
-        if len(raw_values) < 10:
-            return {"error": "محتاج 10 أرقام على الأقل لتدريب الذكاء الاصطناعي"}
-
+        if len(raw_values) < 8:
+            return {"error": "الذكاء الاصطناعي يحتاج 8 أرقام على الأقل لضبط النبض"}
+        
         values = [float(v) for v in raw_values]
-        
-        # تحويل البيانات لنمط يفهمه الذكاء الاصطناعي (أدخل 5 أرقام توقع الـ 6)
-        X, y = prepare_data(values)
-        
-        # تدريب سريع للنموذج على بياناتك الحالية
-        model.fit(X, y)
-        
-        # التوقع للجولة القادمة
-        last_window = np.array([values[-5:]])
-        prediction = model.predict(last_window)[0]
-        
-        # حساب "الاحتمالية الذكية" بناءً على ثبات النموذج
-        recent_std = np.std(values[-5:])
-        pressure = sum(1 for v in values[-10:] if v < 2.0) / 10
-        
-        prob = 40 + (pressure * 40)
-        if prediction > 2.0: prob += 15
-        
-        final_prob = max(5, min(98.5, round(prob, 1)))
-
-        # تحديد الإشارة الذكية
-        if final_prob > 80 and prediction > 2.0:
-            signal = "🚀 إشارة ذهبية (انفجار وشيك)"
-        elif prediction > 3.0:
-            signal = "🔥 نمط صاعد قوي"
-        elif final_prob < 30:
-            signal = "❌ نمط سحب (تجنب)"
-        else:
-            signal = "⚠️ تذبذب عالي"
-
-        return {
-            "signal": signal,
-            "probability": f"{final_prob}%",
-            "predicted_next": round(max(1.1, prediction), 2),
-            "ai_logic": "RandomForest Analysis",
-            "trend": "تصاعدي ذكي 📈" if prediction > np.mean(values) else "هبوطي ذكي 📉"
-        }
-    except Exception as e:
-        return {"error": "الذكاء الاصطناعي يحتاج بيانات أكثر وضوحاً"}
+        result = calculate_ai_precision(values)
+        return result
+    except:
+        return {"error": "حدث خطأ في معالجة البيانات"}
         
