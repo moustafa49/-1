@@ -16,57 +16,66 @@ async def analyze(data: dict):
     try:
         raw_values = data.get("values", [])
         if len(raw_values) < 5:
-            return {"error": "محتاج بيانات أكتر"}
+            return {"error": "محتاج داتا أكتر للصيد"}
 
         values = [float(v) for v in raw_values]
-        recent = np.array(values[-15:])
+        recent = values[-12:] # تركيز على آخر 12 دورة (النطاق الساخن)
         
-        # 1. تحليل "قوة الارتداد" (Rebound Strength)
-        # لو الأرقام اللي فاتت كانت صغيرة جداً، الاحتمال لقفزة كبيرة بيزيد
-        low_streak = 0
-        for v in reversed(values):
-            if v < 1.5: low_streak += 1
-            else: break
-            
-        # 2. تحليل التذبذب (Volatility)
-        volatility = np.std(recent)
+        # 1. كاشف الفخاخ (Trap Detector)
+        # لو السيرفر مكرر أرقام تحت 1.2 أكتر من 3 مرات، إحنا في "مرحلة شفط"
+        traps = sum(1 for v in values[-4:] if v < 1.2)
         
-        # 3. حساب الاحتمالية الذكية
-        # بنزود الوزن للأرقام الصغيرة اللي بتعمل "تجميع" (Pressure)
-        pressure = sum(1 for v in recent if v < 1.3) / len(recent)
+        # 2. تحليل "النبض" (Pulse Score)
+        # بنشوف المسافة بين آخر "انفجار" (أكبر من 3x) ودلوقتي
+        last_big_index = -1
+        for i, v in enumerate(reversed(values)):
+            if v >= 3.0:
+                last_big_index = i
+                break
         
-        base_prob = 35
-        base_prob += (pressure * 50)  # كل ما زاد الضغط زادت فرصة الانفجار
-        base_prob += (low_streak * 5) # كل ما زاد الثبات على الصغير زادت فرصة القفزة
+        # 3. محرك الاحتمالية الهجومي (Aggressive Probability Engine)
+        prob = 30.0
         
-        # لو آخر رقم كان عالي جداً، بنقلل الاحتمالية (التبريد)
-        if values[-1] > 10: base_prob -= 30
-        
-        final_prob = max(5, min(99, round(base_prob, 1)))
+        # قانون الضغط: كل ما زاد عدد الأرقام الصغيرة (1.0 - 1.8) زاد احتمال الانفجار
+        pressure = sum(1 for v in recent if v < 2.0) / len(recent)
+        prob += (pressure * 60) 
 
-        # 4. معادلة التوقع الهجومية (Aggressive Prediction)
-        # بدل ما نضرب في الميل بس، هنستخدم الانحراف المعياري لتوقع "القفزة"
-        if final_prob > 70:
-            # توقع انفجار بناءً على متوسط الأرقام العالية السابقة
-            big_hits = [v for v in values if v > 2.0]
-            prediction = np.mean(big_hits) if big_hits else 2.5
+        # قانون التبريد: لو لسه طالع رقم فلكي (أكبر من 10x)، الاحتمال بيقل فوراً
+        if values[-1] > 8:
+            prob -= 50
+        elif values[-1] < 1.1: # الارتداد من القاع
+            prob += 20
+
+        # لو السيرفر بقاله كتير (أكتر من 6 أدوار) مجابش رقم فوق 2x، الاحتمالية بتنفجر
+        if last_big_index > 6 or last_big_index == -1:
+            prob += 25
+
+        final_prob = max(1, min(99.9, round(prob, 1)))
+
+        # 4. محرك التوقعات (Target Predictor)
+        # النظام هنا "بيطمع" معاك لو الاحتمالية عالية
+        if final_prob > 85:
+            signal = "🚀 انفجار مؤكد (Target: 5x+)"
+            # بيتوقع رقم بين أكبر رقمين في آخر 20 دورة
+            top_vals = sorted([v for v in values[-20:] if v > 2])
+            prediction = np.mean(top_vals[-2:]) if len(top_vals) >= 2 else 4.5
+        elif final_prob > 65:
+            signal = "🔥 فرصة قوية (Target: 2x)"
+            prediction = 2.15
+        elif final_prob > 40:
+            signal = "⚠️ انتظار (خطر متقلب)"
+            prediction = 1.45
         else:
-            # توقع آمن
-            prediction = np.median(recent) * 1.2
-
-        # 5. اختيار الإشارة
-        if final_prob > 80: signal = "🚀 انفجار مؤكد (قريباً)"
-        elif final_prob > 60: signal = "🔥 منطقة تجميع صاعدة"
-        elif final_prob > 40: signal = "⚠️ حذر متذبذب"
-        else: signal = "❌ خطر / سكون"
+            signal = "❌ منطقة موت (تجنب)"
+            prediction = 1.01
 
         return {
             "signal": signal,
             "probability": f"{final_prob}%",
-            "predicted_next": round(max(1.1, prediction), 2),
-            "trend": "تجميع 📦" if low_streak > 2 else "مستقر ⚖️",
-            "pressure_level": "انفجاري 🧨" if pressure > 0.6 else "هادئ ❄️"
+            "predicted_next": round(prediction, 2),
+            "trend": "تجميع قوي 💎" if pressure > 0.7 else "توزيع 💸",
+            "pressure_level": "خطير (شفط) 🧛" if traps >= 2 else "آمن (توزيع) ✅"
         }
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": "بيانات غير صالحة"}
         
